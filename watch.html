@@ -1,0 +1,343 @@
+<script src="https://code.jquery.com/jquery-3.6.0.js" integrity="sha256-H+K7U5CnXl1h5ywQfKtSj8PCmoN9aaq30gDh27Xc0jk=" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/isotope-layout@3/dist/isotope.pkgd.js"></script>
+
+<script>
+
+let sortData = {
+    name: '.name',
+    speed: '.speed parseInt',
+    boulder: '.boulder parseInt',
+    countback: '.countback parseInt',
+    jakob_start: make(0),
+    jakob_24: make(24),
+    jakob_335: make(33.5),
+    jakob_35: make(35),
+    jakob_39: make(39),
+    jakob_41: make(41),
+    jakob_end: make(100),
+};
+
+function extract(itemElem, x) {
+    var r = $( itemElem ).find(`.${x}`).text();
+    return parseInt( r.replace( /[\(\)]/g, '') );
+}
+
+function getAllLeads(r0) {
+    ret = [];
+    $(".climber").each(function (idx, elem) {
+        var r = extract(elem, 'high');
+        if (r == 0) r = r0;
+        ret.push(r);
+    });
+    ret.sort((a, b) => b - a);
+    // console.log(`getAllLeads(${r0}) = `, ret);
+    return ret;
+}
+
+function make(jakob_score) {
+    return function ( itemElem ) {
+        const lead = getAllLeads(jakob_score);
+        var myHigh = extract(itemElem, 'high');
+        if (myHigh == 0) myHigh = jakob_score;
+        lr = 1+lead.indexOf(myHigh);
+        let cb = extract(itemElem, 'countback');
+        return lr*extract(itemElem, 'speed')*extract(itemElem, 'boulder') + 0.1*cb;
+    }
+}
+
+window.onload = () => {
+
+// bind sort button click
+$('.sort-by-button-group').on( 'click', 'button', function() {
+  let sortValue = $(this).attr('data-sort-value');
+  let sorter = sortData[sortValue];
+  var t = 0;
+  if (sortValue.slice(0, 5) == 'jakob') {
+    t = 600;
+    $(".climber").each(function (idx, elem) {
+      let sortKey = sorter(elem);
+      $(elem).find(".total").text(Math.round(sortKey));
+      $(elem).find(".lead").text()
+      $(elem).width(Math.log(sortKey)*150);
+    });
+  }
+  setTimeout(() => {
+    $grid.isotope({ sortBy: sortValue });
+  }, t);
+});
+
+// change is-checked class on buttons
+$('.button-group').each( function( i, buttonGroup ) {
+  var $buttonGroup = $( buttonGroup );
+  $buttonGroup.on( 'click', 'button', function() {
+    $buttonGroup.find('.is-checked').removeClass('is-checked');
+    $( this ).addClass('is-checked');
+  });
+});
+
+
+    var $grid = $('.grid').isotope({
+        layoutMode: 'vertical',
+        animationEngine: 'css',
+        getSortData: sortData
+    });
+
+    $grid.on( 'arrangeComplete', function( event, filteredItems ) {
+        for (i in filteredItems) {
+            const e = $(filteredItems[i].element);
+            if (i == 0) {  e.addClass("gold"); } else { e.removeClass("gold"); }
+            if (i == 1) {  e.addClass("silver"); } else { e.removeClass("silver"); }
+            if (i == 2) {  e.addClass("bronze"); } else { e.removeClass("bronze"); }
+        }
+    });
+}
+</script>
+
+<style>
+
+* { box-sizing: border-box; }
+
+body {
+  font-family: sans-serif;
+}
+
+.profile {
+    width: 35px;
+    background-color: white;
+}
+.flag {
+    width: 35px;
+}
+.countback {
+    opacity: 0.1;
+}
+
+/* ---- button ---- */
+
+.button {
+  display: inline-block;
+  padding: 0.5em 1.0em;
+  margin-bottom: 10px;
+  background: #EEE;
+  border: none;
+  border-radius: 7px;
+  background-image: linear-gradient( to bottom, hsla(0, 0%, 0%, 0), hsla(0, 0%, 0%, 0.2) );
+  color: #222;
+  font-family: sans-serif;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.button:hover {
+  background-color: #8CF;
+  color: #222;
+}
+
+.button:active,
+.button.is-checked {
+  background-color: #28F;
+}
+
+.button.is-checked {
+  color: white;
+}
+
+.button:active {
+  box-shadow: inset 0 1px 10px hsla(0, 0%, 0%, 0.8);
+}
+
+/* ---- button-group ---- */
+
+.button-group:after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.button-group .button {
+  float: left;
+  border-radius: 0;
+  margin-left: 0;
+  margin-right: 1px;
+}
+
+.button-group .button:first-child { border-radius: 0.5em 0 0 0.5em; }
+.button-group .button:last-child { border-radius: 0 0.5em 0.5em 0; }
+
+/* ---- grid ---- */
+
+.grid {
+  border: 1px solid #333;
+  max-width: 1200px;
+}
+
+/* clear fix */
+.grid:after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.climber.gold {
+    background: #d3af37;
+}
+.climber.silver {
+    background: #A7A7AD;
+}
+.climber.bronze {
+    background-color: #CD7F32;
+}
+
+.climber {
+  position: relative;
+  display: flex;
+  flex-direction: horizontal;
+  width: 500px;
+  height: 60px;
+  margin: 5px;
+  padding: 10px;
+  background: #4698BC;
+  color: #262524;
+  transition: background-color 0.6s, width 0.6s;
+}
+
+.climber * {
+  margin: 0;
+  padding: 0;
+  /* border: 1px solid pink; */
+}
+
+.climber .name {
+  color: white;
+}
+
+
+</style>
+
+<h1>Isotope - sorting</h1>
+
+<div class="button-group sort-by-button-group">
+    <button class="button" data-sort-value="name">name</button>
+    <button class="button" data-sort-value="speed">speed</button>
+    <button class="button" data-sort-value="boulder">boulder</button>
+    <button class="button" data-sort-value="countback">countback</button>
+    <button class="button" data-sort-value="jakob_start">jakob_start</button>
+    <button class="button" data-sort-value="jakob_24">jakob_24</button>
+    <button class="button" data-sort-value="jakob_335">jakob_335</button>
+    <button class="button" data-sort-value="jakob_35">jakob_35</button>
+    <button class="button" data-sort-value="jakob_39">jakob_39</button>
+    <button class="button" data-sort-value="jakob_41">jakob_41</button>
+    <button class="button" data-sort-value="jakob_end">jakob_end</button>
+  </div>
+
+<div class="grid">
+  <div class="climber">
+    <div>
+        <img class=flag src="https://ifsc.results.info/images/flags/ESP.png" />
+        <img class="profile" src="https://ifsc.results.info/athletes/811/photo" />
+    </div>
+    <div>
+        <h3 class="name">Alberto Ginés López</h3>
+        speed<span class="speed">1</span>
+        boulder<span class="boulder">7</span>
+        lead<span class="lead"></span>
+        high<span class="high">38</span>
+        total<span class="total"></span>
+        <span class="countback">6</span>
+    </div>
+
+  </div>
+  <div class="climber">
+      <div>
+        <img class="flag" src="https://ifsc.results.info/images/flags/USA.png" />
+        <img class="profile" src="https://ifsc.results.info/athletes/1778/photo" />
+      </div>
+      <div>
+        <h3 class="name">Nathaniel Coleman</h3>
+        speed<span class="speed">6</span>
+        boulder<span class="boulder">1</span>
+        lead<span class="lead"></span>
+        high<span class="high">34</span>
+        total<span class="total"></span>
+        <span class="countback">8</span>
+      </div>
+  </div>
+  <div class="climber">
+      <div>
+          <img class="flag" src="https://ifsc.results.info/images/flags/AUT.png" />
+          <img class="profile" src="https://ifsc.results.info/athletes/1214/photo" />
+      </div>
+      <div>
+        <h3 class="name">Jakob Schubert</h3>
+        speed<span class="speed">7</span>
+        boulder<span class="boulder">5</span>
+        lead<span class="lead"></span>
+        high<span class="high">0</span>
+        total<span class="total"></span>
+        <span class="countback">4</span>
+      </div>
+
+  </div>
+  <div class="climber">
+      <div>
+          <img class="flag" src="https://ifsc.results.info/images/flags/JPN.png" />
+          <img class="profile" src="https://ifsc.results.info/athletes/2276/photo" />
+      </div>
+      <div>
+        <h3 class="name">Tomoa Narasaki</h3>
+        speed<span class="speed">2</span>
+        boulder<span class="boulder">3</span>
+        lead<span class="lead"></span>
+        high<span class="high">33</span>
+        total<span class="total"></span>
+        <span class="countback">2</span>
+      </div>
+  </div>
+  <div class="climber">
+      <div>
+          <img class="flag" src="https://ifsc.results.info/images/flags/FRA.png" />
+          <img class="profile" src="https://ifsc.results.info/athletes/523/photo" />
+      </div>
+      <div>
+        <h3 class="name">Mickaël Mawem</h3>
+        speed<span class="speed">3</span>
+        boulder<span class="boulder">2</span>
+        lead<span class="lead"></span>
+        high<span class="high">23</span>
+        total<span class="total"></span>
+        <span class="countback">1</span>
+      </div>
+  </div>
+
+  <div class="climber">
+    <div>
+        <img class="flag" src="https://ifsc.results.info/images/flags/CZE.png" />
+        <img class="profile" src="https://ifsc.results.info/athletes/1364/photo" />
+    </div>
+    <div>
+        <h3 class="name">Adam Ondra</h3>
+        speed<span class="speed">4</span>
+        boulder<span class="boulder">6</span>
+        lead<span class="lead"></span>
+        high<span class="high">42</span>
+        total<span class="total"></span>
+        <span class="countback">5</span>
+    </div>
+</div>
+
+  <div class="climber">
+      <div>
+        <img class="flag" src="https://ifsc.results.info/images/flags/USA.png" />
+        <img class="profile" src="https://ifsc.results.info/athletes/1929/photo" />
+      </div>
+      <div>
+        <h3 class="name">Colin Duffy</h3>
+        speed<span class="speed">5</span>
+        boulder<span class="boulder">4</span>
+        lead<span class="lead"></span>
+        high<span class="high">40</span>
+        total<span class="total"></span>
+        <span class="countback">3</span>
+      </div>
+  </div>
+</div>
